@@ -12,7 +12,6 @@ function App() {
   const { links, loading, error, addLink, deleteLink, updateOrder, updateLink } = useLinks()
   const { 
     categories, 
-    loading: categoriesLoading, 
     error: categoriesError,
     addCategory,
     updateCategory,

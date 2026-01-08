@@ -33,7 +33,6 @@ interface CategoryManagerProps {
 
 function SortableCategoryItem({
   category,
-  index,
   editingIndex,
   editingName,
   editingColor,
@@ -47,7 +46,6 @@ function SortableCategoryItem({
   onEditingColorChange,
 }: {
   category: Category
-  index: number
   editingIndex: string | null
   editingName: string
   editingColor: string
@@ -143,7 +141,7 @@ function SortableCategoryItem({
             className="category-manager-edit-btn"
             onClick={(e) => {
               e.stopPropagation()
-              onStartEdit(index)
+              onStartEdit(category.id)
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -156,7 +154,7 @@ function SortableCategoryItem({
             className="category-manager-delete-btn"
             onClick={(e) => {
               e.stopPropagation()
-              onDelete(index)
+              onDelete(category.id)
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -318,7 +316,6 @@ export function CategoryManager({
               <SortableCategoryItem
                 key={category.id}
                 category={category}
-                index={categories.findIndex((c) => c.id === category.id)}
                 editingIndex={editingId}
                 editingName={editingName}
                 editingColor={editingColor}
