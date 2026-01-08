@@ -1,0 +1,91 @@
+.export-links {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 24px;
+}
+
+.export-links-title {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.export-links-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.export-links-select {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.export-links-select:focus {
+  outline: none;
+  border-color: #4ECDC4;
+}
+
+.export-links-title-input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.export-links-title-input:focus {
+  outline: none;
+  border-color: #4ECDC4;
+}
+
+.export-links-title-input::placeholder {
+  color: #999;
+}
+
+.export-links-button {
+  padding: 12px 24px;
+  background: #4ECDC4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.export-links-button:hover:not(:disabled) {
+  background: #45B7D1;
+}
+
+.export-links-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .export-links-controls {
+    flex-direction: column;
+  }
+  
+  .export-links-select,
+  .export-links-title-input {
+    width: 100%;
+  }
+  
+  .export-links-button {
+    width: 100%;
+  }
+}

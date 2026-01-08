@@ -1,0 +1,39 @@
+.link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.link-grid-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.link-grid-empty-hint {
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* 手機：2個 */
+@media (max-width: 768px) {
+  .link-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* 平板：3個 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .link-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 桌上螢幕：6個 */
+@media (min-width: 1025px) {
+  .link-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
