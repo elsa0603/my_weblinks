@@ -2,11 +2,16 @@ import { useState, useEffect, memo } from 'react'
 import type { Link } from '../utils/supabase'
 import './LinkCard.css'
 
+interface CategoryInfo {
+  name: string
+  color: string
+}
+
 interface LinkCardProps {
   link: Link
   onDelete: (id: string) => void
   onUpdate: (id: string, updates: Partial<Link>) => void
-  categories: string[]
+  categories: CategoryInfo[]
   onEditingChange?: (isEditing: boolean) => void
 }
 
@@ -53,15 +58,9 @@ function LinkCardComponent({ link, onDelete, onUpdate, categories, onEditingChan
     e.preventDefault()
     if (selectedCategory !== link.category) {
       // 獲取新分類的顏色
-      const saved = localStorage.getItem('categories')
-      if (saved) {
-        const categoriesData = JSON.parse(saved)
-        const found = categoriesData.find((cat: { name: string; color: string }) => cat.name === selectedCategory)
-        const newColor = found ? found.color : link.color
-        onUpdate(link.id, { category: selectedCategory, color: newColor })
-      } else {
-        onUpdate(link.id, { category: selectedCategory })
-      }
+      const found = categories.find((cat) => cat.name === selectedCategory)
+      const newColor = found ? found.color : link.color
+      onUpdate(link.id, { category: selectedCategory, color: newColor })
     }
     setIsEditingCategory(false)
   }
@@ -170,8 +169,8 @@ function LinkCardComponent({ link, onDelete, onUpdate, categories, onEditingChan
             onClick={(e) => e.stopPropagation()}
           >
             {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+              <option key={cat.name} value={cat.name}>
+                {cat.name}
               </option>
             ))}
           </select>

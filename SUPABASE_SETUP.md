@@ -30,6 +30,27 @@ CREATE POLICY "Allow all operations" ON links
 -- 建立索引以提升查詢效能
 CREATE INDEX idx_links_order ON links("order");
 CREATE INDEX idx_links_category ON links(category);
+
+-- 建立 categories 資料表
+CREATE TABLE categories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT NOT NULL,
+  "order" INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 設置 Row Level Security (RLS)
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+
+-- 允許所有操作（因為無身份驗證）
+CREATE POLICY "Allow all operations" ON categories
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- 建立索引以提升查詢效能
+CREATE INDEX idx_categories_order ON categories("order");
 ```
 
 ## 步驟 2: 取得 API 憑證

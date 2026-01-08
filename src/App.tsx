@@ -1,36 +1,25 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useLinks } from './hooks/useLinks'
+import { useCategories } from './hooks/useCategories'
 import { LinkForm } from './components/LinkForm'
 import { LinkGrid } from './components/LinkGrid'
 import { CategoryManager } from './components/CategoryManager'
 import { ExportLinks } from './components/ExportLinks'
+import type { Category } from './utils/supabase'
 import './App.css'
-
-interface Category {
-  name: string
-  color: string
-}
 
 function App() {
   const { links, loading, error, addLink, deleteLink, updateOrder, updateLink } = useLinks()
+  const { 
+    categories, 
+    loading: categoriesLoading, 
+    error: categoriesError,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    reorderCategories,
+  } = useCategories()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [categories, setCategories] = useState<Category[]>(() => {
-    const saved = localStorage.getItem('categories')
-    if (saved) {
-      return JSON.parse(saved)
-    }
-    return [
-      { name: '未分類', color: '#4ECDC4' },
-      { name: '工作', color: '#FF6B6B' },
-      { name: '學習', color: '#45B7D1' },
-      { name: '娛樂', color: '#F7DC6F' },
-    ]
-  })
-
-  // 保存分類到 localStorage
-  useEffect(() => {
-    localStorage.setItem('categories', JSON.stringify(categories))
-  }, [categories])
 
   const handleAddLink = useCallback(async (linkData: Parameters<typeof addLink>[0]) => {
     await addLink(linkData)
@@ -48,9 +37,56 @@ function App() {
     await updateLink(id, updates)
   }, [updateLink])
 
+  // 處理新增分類
+  const handleAddCategory = useCallback(async (name: string, color: string) => {
+    try {
+      await addCategory(name, color)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '新增分類失敗'
+      console.error('Failed to add category:', err)
+      alert(errorMessage)
+    }
+  }, [addCategory])
+
+  // 處理更新分類
+  const handleUpdateCategory = useCallback(async (id: string, updates: Partial<Category>) => {
+    try {
+      await updateCategory(id, updates)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '更新分類失敗'
+      alert(errorMessage)
+    }
+  }, [updateCategory])
+
+  // 處理刪除分類
+  const handleDeleteCategory = useCallback(async (id: string) => {
+    try {
+      await deleteCategory(id)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '刪除分類失敗'
+      alert(errorMessage)
+    }
+  }, [deleteCategory])
+
+  // 處理重新排序
+  const handleReorderCategories = useCallback(async (categoryIds: string[]) => {
+    try {
+      await reorderCategories(categoryIds)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '重新排序失敗'
+      alert(errorMessage)
+    }
+  }, [reorderCategories])
+
   // 使用 useMemo 優化計算
   const categoryNames = useMemo(() => categories.map((cat) => cat.name), [categories])
   const defaultColor = useMemo(() => categories[0]?.color || '#4ECDC4', [categories])
+  
+  // 為 LinkForm 準備分類信息（包含顏色）
+  const categoriesForForm = useMemo(() => 
+    categories.map((cat) => ({ name: cat.name, color: cat.color })),
+    [categories]
+  )
   const maxOrder = useMemo(() => 
     links.length > 0 ? Math.max(...links.map((l) => l.order)) : -1,
     [links]
@@ -75,9 +111,12 @@ function App() {
         <div className="app-container">
           <CategoryManager 
             categories={categories} 
-            onChange={setCategories}
             selectedCategory={selectedCategory || undefined}
             onSelectCategory={setSelectedCategory}
+            onAddCategory={handleAddCategory}
+            onUpdateCategory={handleUpdateCategory}
+            onDeleteCategory={handleDeleteCategory}
+            onReorderCategories={handleReorderCategories}
           />
           
           {selectedCategory && (
@@ -94,14 +133,14 @@ function App() {
           
           <LinkForm
             onSubmit={handleAddLink}
-            categories={categoryNames}
+            categories={categoriesForForm}
             defaultColor={defaultColor}
             maxOrder={maxOrder}
           />
 
-          {error && (
+          {(error || categoriesError) && (
             <div className="app-error">
-              錯誤：{error}
+              錯誤：{error || categoriesError}
             </div>
           )}
 
@@ -113,7 +152,7 @@ function App() {
               onDelete={handleDeleteLink}
               onReorder={handleReorder}
               onUpdate={handleUpdateLink}
-              categories={categoryNames}
+              categories={categoriesForForm}
             />
           )}
 

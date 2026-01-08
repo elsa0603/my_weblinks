@@ -20,12 +20,17 @@ import type { Link } from '../utils/supabase'
 import { LinkCard } from './LinkCard'
 import './LinkGrid.css'
 
+interface CategoryInfo {
+  name: string
+  color: string
+}
+
 interface LinkGridProps {
   links: Link[]
   onDelete: (id: string) => void
   onReorder: (linkIds: string[]) => void
   onUpdate: (id: string, updates: Partial<Link>) => void
-  categories: string[]
+  categories: CategoryInfo[]
 }
 
 function SortableLinkCard({ 
@@ -37,7 +42,7 @@ function SortableLinkCard({
   link: Link
   onDelete: (id: string) => void
   onUpdate: (id: string, updates: Partial<Link>) => void
-  categories: string[]
+  categories: CategoryInfo[]
 }) {
   const [isEditing, setIsEditing] = React.useState(false)
 

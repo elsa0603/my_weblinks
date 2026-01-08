@@ -19,16 +19,16 @@ import { CSS } from '@dnd-kit/utilities'
 import { ColorPicker } from './ColorPicker'
 import './CategoryManager.css'
 
-interface Category {
-  name: string
-  color: string
-}
+import type { Category } from '../utils/supabase'
 
 interface CategoryManagerProps {
   categories: Category[]
-  onChange: (categories: Category[]) => void
   selectedCategory?: string
   onSelectCategory?: (category: string | null) => void
+  onAddCategory: (name: string, color: string) => Promise<void>
+  onUpdateCategory: (id: string, updates: Partial<Category>) => Promise<void>
+  onDeleteCategory: (id: string) => Promise<void>
+  onReorderCategories: (categoryIds: string[]) => Promise<void>
 }
 
 function SortableCategoryItem({
@@ -48,15 +48,15 @@ function SortableCategoryItem({
 }: {
   category: Category
   index: number
-  editingIndex: number | null
+  editingIndex: string | null
   editingName: string
   editingColor: string
   selectedCategory?: string
   onSelectCategory?: (category: string | null) => void
-  onStartEdit: (index: number) => void
-  onSaveEdit: (index: number) => void
+  onStartEdit: (id: string) => void
+  onSaveEdit: (id: string, name: string, color: string) => Promise<void>
   onCancelEdit: () => void
-  onDelete: (index: number) => void
+  onDelete: (id: string) => Promise<void>
   onEditingNameChange: (name: string) => void
   onEditingColorChange: (color: string) => void
 }) {
@@ -68,8 +68,8 @@ function SortableCategoryItem({
     transition,
     isDragging,
   } = useSortable({ 
-    id: `category-${index}`,
-    disabled: editingIndex === index,
+    id: category.id,
+    disabled: editingIndex === category.id,
   })
 
   const style = {
@@ -81,21 +81,21 @@ function SortableCategoryItem({
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, backgroundColor: editingIndex === index ? editingColor : category.color }}
+      style={{ ...style, backgroundColor: editingIndex === category.id ? editingColor : category.color }}
       className="category-manager-item"
       {...attributes}
-      {...(editingIndex === index ? {} : listeners)}
+      {...(editingIndex === category.id ? {} : listeners)}
     >
-      {editingIndex === index ? (
+      {editingIndex === category.id ? (
         <>
           <input
             type="text"
             className="category-manager-edit-input"
             value={editingName}
             onChange={(e) => onEditingNameChange(e.target.value)}
-            onKeyPress={(e) => {
+            onKeyPress={async (e) => {
               if (e.key === 'Enter') {
-                onSaveEdit(index)
+                await onSaveEdit(category.id, editingName, editingColor)
               } else if (e.key === 'Escape') {
                 onCancelEdit()
               }
@@ -108,7 +108,7 @@ function SortableCategoryItem({
           />
           <button
             className="category-manager-save-btn"
-            onClick={() => onSaveEdit(index)}
+            onClick={async () => await onSaveEdit(category.id, editingName, editingColor)}
           >
             ✓
           </button>
@@ -171,10 +171,18 @@ function SortableCategoryItem({
   )
 }
 
-export function CategoryManager({ categories, onChange, selectedCategory, onSelectCategory }: CategoryManagerProps) {
+export function CategoryManager({ 
+  categories, 
+  selectedCategory, 
+  onSelectCategory,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  onReorderCategories,
+}: CategoryManagerProps) {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState('#4ECDC4')
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [editingColor, setEditingColor] = useState('#4ECDC4')
 
@@ -189,7 +197,7 @@ export function CategoryManager({ categories, onChange, selectedCategory, onSele
     })
   )
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return
     
     const trimmedName = newCategoryName.trim()
@@ -198,60 +206,78 @@ export function CategoryManager({ categories, onChange, selectedCategory, onSele
       return
     }
 
-    onChange([...categories, { name: trimmedName, color: newCategoryColor }])
-    setNewCategoryName('')
-    setNewCategoryColor('#4ECDC4')
-  }
-
-  const handleDeleteCategory = (index: number) => {
-    if (confirm('確定要刪除此分類嗎？')) {
-      onChange(categories.filter((_, i) => i !== index))
+    try {
+      await onAddCategory(trimmedName, newCategoryColor)
+      setNewCategoryName('')
+      setNewCategoryColor('#4ECDC4')
+    } catch (err) {
+      // 錯誤已在 App.tsx 中處理
     }
   }
 
-  const handleStartEdit = (index: number) => {
-    const category = categories[index]
-    setEditingIndex(index)
-    setEditingName(category.name)
-    setEditingColor(category.color)
+  const handleDeleteCategory = async (id: string) => {
+    if (confirm('確定要刪除此分類嗎？')) {
+      try {
+        await onDeleteCategory(id)
+      } catch (err) {
+        // 錯誤已在 App.tsx 中處理
+      }
+    }
   }
 
-  const handleSaveEdit = (index: number) => {
-    if (!editingName.trim()) {
+  const handleStartEdit = (id: string) => {
+    const category = categories.find((cat) => cat.id === id)
+    if (category) {
+      setEditingId(id)
+      setEditingName(category.name)
+      setEditingColor(category.color)
+    }
+  }
+
+  const handleSaveEdit = async (id: string, name: string, color: string) => {
+    if (!name.trim()) {
       alert('分類名稱不能為空')
       return
     }
 
-    const trimmedName = editingName.trim()
+    const trimmedName = name.trim()
     // 檢查是否有重複（排除當前編輯的分類）
-    if (categories.some((cat, i) => i !== index && cat.name === trimmedName)) {
+    if (categories.some((cat) => cat.id !== id && cat.name === trimmedName)) {
       alert('此分類名稱已存在')
       return
     }
 
-    const updated = categories.map((cat, i) =>
-      i === index ? { name: trimmedName, color: editingColor } : cat
-    )
-    onChange(updated)
-    setEditingIndex(null)
+    try {
+      await onUpdateCategory(id, { name: trimmedName, color })
+      setEditingId(null)
+      setEditingName('')
+      setEditingColor('#4ECDC4')
+    } catch (err) {
+      // 錯誤已在 App.tsx 中處理
+    }
   }
 
   const handleCancelEdit = () => {
-    setEditingIndex(null)
+    setEditingId(null)
     setEditingName('')
     setEditingColor('#4ECDC4')
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = categories.findIndex((_, i) => `category-${i}` === active.id)
-      const newIndex = categories.findIndex((_, i) => `category-${i}` === over.id)
+      const oldIndex = categories.findIndex((cat) => cat.id === active.id)
+      const newIndex = categories.findIndex((cat) => cat.id === over.id)
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newCategories = arrayMove(categories, oldIndex, newIndex)
-        onChange(newCategories)
+        const categoryIds = newCategories.map((cat) => cat.id)
+        try {
+          await onReorderCategories(categoryIds)
+        } catch (err) {
+          // 錯誤已在 App.tsx 中處理
+        }
       }
     }
   }
@@ -284,16 +310,16 @@ export function CategoryManager({ categories, onChange, selectedCategory, onSele
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={categories.map((_, index) => `category-${index}`)}
+          items={categories.map((cat) => cat.id)}
           strategy={horizontalListSortingStrategy}
         >
           <div className="category-manager-list">
-            {categories.map((category, index) => (
+            {categories.map((category) => (
               <SortableCategoryItem
-                key={`category-${index}`}
+                key={category.id}
                 category={category}
-                index={index}
-                editingIndex={editingIndex}
+                index={categories.findIndex((c) => c.id === category.id)}
+                editingIndex={editingId}
                 editingName={editingName}
                 editingColor={editingColor}
                 selectedCategory={selectedCategory}
